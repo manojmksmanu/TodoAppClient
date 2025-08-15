@@ -4,7 +4,11 @@
     "baseUrl": "./src",
     "paths": {
       "@/*": ["*"]
-    }
+    },
+    "jsx": "react-native", // 👈 JSX enable
+    "allowJs": true, // JS files bhi allow
+    "esModuleInterop": true, // import compatibility
+    "skipLibCheck": true // type check skip karega for node_modules
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["**/node_modules", "**/Pods"]

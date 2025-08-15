@@ -10,19 +10,11 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  withSpring,
 } from 'react-native-reanimated';
-import {
-  PanGestureHandler,
-  PanGestureHandlerGestureEvent,
-} from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-worklets';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {
-  scaleWidth,
-  scaleHeight,
-  scaleFont,
-  fullWidth,
-} from '../constants/scaling';
+import { scaleWidth, scaleFont, scaleHeight } from '../constants/scaling';
 
 import Home from '../screens/App/Home/Home';
 import Calendar from '../screens/App/Calendar/Calendar';
@@ -40,6 +32,7 @@ const screens = [
   { name: 'Profile', component: Profile, icon: 'person-outline' },
 ];
 
+// Calculate proper indicator positioning
 const tabWidth = width / screens.length;
 const indicatorWidth = scaleWidth(40); // Same as icon container width
 
@@ -73,20 +66,22 @@ export default function TabNavigator() {
     transform: [{ translateX: translateX.value }],
   }));
 
-  const indicatorStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: indicatorTranslateX.value }],
-  }));
+  // Modern Gesture API
+  const panGesture = Gesture.Pan().onEnd(event => {
+    'worklet';
+    const { translationX, velocityX } = event;
 
-  const onGestureEvent = (event: PanGestureHandlerGestureEvent) => {
-    const { translationX, velocityX } = event.nativeEvent;
-    if (translationX < -50 || velocityX < -500) handleSwipe('left');
-    else if (translationX > 50 || velocityX > 500) handleSwipe('right');
-  };
+    if (translationX < -50 || velocityX < -500) {
+      runOnJS(handleSwipe)('left');
+    } else if (translationX > 50 || velocityX > 500) {
+      runOnJS(handleSwipe)('right');
+    }
+  });
 
   return (
     <View style={{ flex: 1 }}>
       {/* Swipeable Screens */}
-      <PanGestureHandler onEnded={onGestureEvent}>
+      <GestureDetector gesture={panGesture}>
         <Animated.View style={[styles.container, animatedStyle]}>
           {screens.map((screen, index) => (
             <View key={index} style={{ width, flex: 1 }}>
@@ -94,7 +89,7 @@ export default function TabNavigator() {
             </View>
           ))}
         </Animated.View>
-      </PanGestureHandler>
+      </GestureDetector>
 
       {/* Modern Bottom Tabs */}
       <View style={styles.tabBarWrapper}>
@@ -158,8 +153,8 @@ const styles = StyleSheet.create({
   tabBarWrapper: {
     backgroundColor: '#FFFFFF',
     paddingTop: 0,
-    paddingBottom: 20,
-    paddingHorizontal: 16,
+    paddingBottom: scaleHeight(20),
+    paddingHorizontal: scaleWidth(16),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.08,
@@ -219,6 +214,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 6,
+    transform: [{ scale: 1.1 }], // Slight scale up for active state
   },
 
   tabLabel: {
